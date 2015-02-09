@@ -11,11 +11,11 @@ In addition to `Value<T>`, LiftedValues provides `Maybe<T>` which is roughly the
     if (maybeValue is Nothing) {
       HandleNothing();
     } else {
-      HandleValue<T>(maybeValue.Eval());
+      HandleValue(maybeValue.Eval());
     }
 
-Wrapping simple values and functions is covered via factory methods on the static `Value` and `Maybe` classes. There are also `Maybe` wrappers for `WeakReference`, including weak delegates to instance functions. (Compatible with Unity3D!)
+Wrapping simple values and functions is covered via factory methods on the static `Value` and `Maybe` classes. There are also `Maybe` wrappers for `WeakReference`, including weak delegates to instance methods. (Compatible with Unity3D!)
 
-To streamline more complex applications, `Value<T>` and `Maybe<T>` are actually interfaces, which allows them to be inherited along with another class. Yes, this violates conventional naming. Too bad. ;)
+To streamline more complex use, `Value<T>` and `Maybe<T>` are actually interfaces, allowing them to be inherited along with another class. Yes, this violates conventional naming. Too bad. ;)
 
-*Though some names are borrowed from Haskell, the FP-wary can rest easy: there are no monads here.*
+*Despite names borrowed from Haskell, the FP-wary can rest easy: there are no monads here.*
