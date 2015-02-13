@@ -47,7 +47,7 @@ namespace Settworks.LiftedValues {
     }
     
     /// <summary>
-    /// Returns a Value which evaluates the supplied function.
+    /// Returns a Value which evaluates as the supplied function.
     /// </summary>
     public static Value<T> From<T>(Func<T> func) {
       Type t = typeof(T);
@@ -56,7 +56,7 @@ namespace Settworks.LiftedValues {
            || t.IsSubclassOf(typeof(IMaybe)) ))
       {
         throw new ArgumentOutOfRangeException
-          ("function", "Only Maybe may evaluate to MValue or Nothing.");
+          ("func", "Only Maybe may evaluate to MValue or Nothing.");
       } else {
         return new ValueFrom<T>(func);
       }

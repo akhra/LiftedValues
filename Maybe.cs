@@ -11,18 +11,23 @@
 //     unless the type is Nothing, in which case it returns
 //     Maybe.Nothing.
 // - Maybe.From(func) takes a function with no arguments
-//     any any return type, and returns a Maybe which
+//     and any return type, and returns a Maybe which
 //     evaluates to Value.From(value), unless the type is
 //     Nothing, in which case it returns Maybe.Nothing.
+// - Maybe.FromM(func) takes a function with no arguments
+//     that returns MValue, and evaluates as that function.
 // - Maybe.WeakPure(target) returns a Maybe which contains a
 //     weak reference to the target. It behaves as Maybe.Pure
 //     while the target is alive, Maybe.Nothing otherwise.
 // - Maybe.WeakFrom(func) returns a Maybe which contains a
 //     weak reference to a function. It behaves as Maybe.From
 //     while the target is alive, Maybe.Nothing otherwise.
+// - Maybe.WeakFromM(func) returns a Maybe which contains a
+//     weak reference to a function. It behaves as Maybe.FromM
+//     while the target is alive, Maybe.Nothing otherwise.
 // - NOTE: Weak references do not expire until the target is
-//     garbage collected! Having no strong references does
-//     not guarantee a dead weak reference.
+//     garbage collected! Having no live strong references
+//     does not guarantee a dead weak reference.
 
 using System;
 
@@ -70,6 +75,23 @@ namespace Settworks.LiftedValues {
     }
 
     /// <summary>
+    /// Returns a Maybe which evaluates as the supplied function.
+    /// </summary>
+    public static Maybe<T> FromM<T>(Func<MValue<T>> func) {
+      Type t = typeof(T);
+      if (t.IsSubclassOf(typeof(MValue)) && !t.IsSubclassOf(typeof(Just))) {
+        if (t.IsSubclassOf(typeof(Nothing))) {
+          return Nothing<T>();
+        } else {
+          throw new ArgumentOutOfRangeException
+            ("func", "Only Maybe may evaluate to MValue or Nothing.");
+        }
+      } else {
+        return new MaybeFromM<T>(func);
+      }
+    }
+
+    /// <summary>
     /// Encapsulates a weak reference in a Maybe, which evaluates to
     /// strongly-referenced Value.Pure(target) if target is alive and
     /// not Nothing; otherwise evaluates to Nothing.
@@ -91,6 +113,26 @@ namespace Settworks.LiftedValues {
              : (func.Target == null)
                ? Just(Value.From<T>(func)) // static method
                : new MaybeWeakFrom<T>(func);
+    }
+    
+    /// <summary>
+    /// Encapsulates a weak delegate in a Maybe, which evaluates to
+    /// func() if target is alive; otherwise evaluates to Nothing.
+    /// </summary>
+    public static Maybe<T> WeakFromM<T>(Func<MValue<T>> func) {
+      Type t = typeof(T);
+      if (t.IsSubclassOf(typeof(MValue)) && !t.IsSubclassOf(typeof(Just))) {
+        if (t.IsSubclassOf(typeof(Nothing))) {
+          return Nothing<T>();
+        } else {
+          throw new ArgumentOutOfRangeException
+            ("func", "Only Maybe may evaluate to MValue or Nothing.");
+        }
+      } else if (func.Target == null) {
+        return new MaybeFromM<T>(func); // Method is static
+      } else {
+        return new MaybeWeakFromM<T>(func);
+      }
     }
 
     // Private members below this point.
@@ -115,6 +157,16 @@ namespace Settworks.LiftedValues {
       }
     }
     
+    sealed class MaybeFromM<T> : Maybe<T> {
+      readonly Func<MValue<T>> from;
+      public Func<MValue<T>> Eval {
+        get { return from; }
+      }
+      public MaybeFromM(Func<MValue<T>> from) {
+        this.from = from;
+      }
+    }
+
     sealed class MaybeWeakPure<T> : Maybe<T> {
       readonly WeakReference target;
       public Func<MValue<T>> Eval {
@@ -142,13 +194,33 @@ namespace Settworks.LiftedValues {
             return () => Value.Nothing<T>();
           } else {
             return () => Value.From
-              ( (Func<T>)
-                Delegate.CreateDelegate(typeof(Func<T>),reference,method)
+              ( (Func<T>)Delegate.CreateDelegate
+                  (typeof(Func<T>),reference,method)
               );
           }
         }
       }
       public MaybeWeakFrom(Func<T> func) {
+        target = new WeakReference(func.Target);
+        method = func.Method;
+      }
+    }
+
+    sealed class MaybeWeakFromM<T> : Maybe<T> {
+      readonly WeakReference target;
+      readonly System.Reflection.MethodInfo method;
+      public Func<MValue<T>> Eval {
+        get {
+          object reference = target.Target;
+          if (reference == null) {
+            return () => Value.Nothing<T>();
+          } else {
+            return (Func<MValue<T>>)Delegate.CreateDelegate
+                     (typeof(Func<MValue<T>>),reference,method);
+          }
+        }
+      }
+      public MaybeWeakFromM(Func<MValue<T>> func) {
         target = new WeakReference(func.Target);
         method = func.Method;
       }
