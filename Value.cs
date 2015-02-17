@@ -64,7 +64,7 @@ namespace Settworks.LiftedValues {
 
     // Private members below this point.
     
-    sealed class ValueNothing<T> : Nothing<T> {
+    sealed class ValueNothing<T> : MValue<T>, Nothing {
       public static readonly ValueNothing<T> value = new ValueNothing<T>();
       public Func<T> Eval {
         get { throw new NotSupportedException ("Cannot evaluate Nothing."); }

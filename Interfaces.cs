@@ -25,12 +25,7 @@ namespace Settworks.LiftedValues {
   /// evaluate Nothing causes a runtime exception!
   /// </summary>
   public interface Nothing { }
-  /// <summary>
-  /// Nothing represents the absence of value. Attempting to
-  /// evaluate Nothing causes a runtime exception!
-  /// </summary>
-  public interface Nothing<T> : MValue<T>, Nothing { }
-  
+
   /// <summary>
   /// A Just Value evaluates to a concrete value of its type.
   /// </summary>
